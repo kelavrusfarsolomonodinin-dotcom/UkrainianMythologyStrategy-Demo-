@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Мифологическая стратегия — 3D прототип</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;color:#f4ead7;font-family:system-ui, sans-serif}
+#game{position:fixed;inset:0}canvas{display:block}
+.panel{position:fixed;z-index:2;left:12px;right:12px;display:flex;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}
+.top{top:12px}.bottom{bottom:14px;justify-content:center;flex-wrap:wrap}
+.pill,.action{pointer-events:auto;background:#172433eF;border:1px solid #9b8055;border-radius:12px;color:#f4ead7;padding:10px 13px;font-size:13px;box-shadow:0 4px 18px #0005}
+.action{background:#26394a;font-weight:600}.action:active{transform:scale(.97)}
+#hint{position:fixed;z-index:2;left:50%;top:68px;transform:translateX(-50%);background:#101722c9;padding:7px 12px;border-radius:9px;font-size:12px;white-space:nowrap;color:#e7d8bd}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div class="panel top"><div class="pill">Уровень замка: <b id="level">1</b></div><div class="pill">Ресурсы: <b>1 000</b></div></div>
+<div id="hint">Проводи пальцем, чтобы осмотреть замок</div>
+<div class="panel bottom">
+<button class="action" id="styleA">Стиль Перуна</button>
+<button class="action" id="styleB">Стиль Леса</button>
+<button class="action" id="upgrade">Улучшить замок</button>
+</div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const host=document.querySelector('#game');
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9aafbd); scene.fog=new THREE.Fog(0x9aafbd,24,65);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100); camera.position.set(12,11,15);
+const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,1.7)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; host.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe8f2ff,0x4d4636,2));
+const sun=new THREE.DirectionalLight(0xffedcf,3); sun.position.set(-8,16,9); sun.castShadow=true; scene.add(sun);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x526b55,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=-.12; ground.receiveShadow=true; scene.add(ground);
+const castle=new THREE.Group();scene.add(castle);
+const stone=new THREE.MeshStandardMaterial({color:0xb8a58a,roughness:.9}), roofA=new THREE.MeshStandardMaterial({color:0x344d69,roughness:.8}), roofB=new THREE.MeshStandardMaterial({color:0x526d42,roughness:.8}), gold=new THREE.MeshStandardMaterial({color:0xc49a50,metalness:.55,roughness:.35});
+function block(w,h,d,x,y,z,mat,parent=castle){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function tower(x,z,roof){block(1.45,2.5,1.45,x,1.25,z,stone);const r=new THREE.Mesh(new THREE.ConeGeometry(1.05,1.5,4),roof);r.position.set(x,3.25,z);r.rotation.y=Math.PI/4;r.castShadow=true;castle.add(r);block(.12,.8,.12,x,4.35,z,gold)}
+const walls=[];
+walls.push(block(8,.9,.55,0,.55,-3.5,stone));walls.push(block(8,.9,.55,0,.55,3.5,stone));walls.push(block(.55,.9,7, -4,.55,0,stone));walls.push(block(.55,.9,7,4,.55,0,stone));
+tower(-4,-3.5,roofA);tower(4,-3.5,roofA);tower(-4,3.5,roofA);tower(4,3.5,roofA);
+block(3,2.7,3,0,1.35,0,stone);
+const mainRoof=new THREE.Mesh(new THREE.ConeGeometry(2.35,2.2,4),roofA);mainRoof.position.set(0,3.8,0);mainRoof.rotation.y=Math.PI/4;mainRoof.castShadow=true;castle.add(mainRoof);
+block(1.5,1.2,.2,0,1.1,1.61,gold);
+const bannerPole=block(.09,2.4,.09,0,5.05,-.2,gold);
+const banner=new THREE.Mesh(new THREE.PlaneGeometry(1.25,.8),new THREE.MeshStandardMaterial({color:0x244a78,side:THREE.DoubleSide}));banner.position.set(.65,5.45,-.2);castle.add(banner);
+const paths=block(2,.06,7,0,-.02,7,new THREE.MeshStandardMaterial({color:0x9a896d}));
+let level=1;
+function setStyle(forest){const roof=forest?roofB:roofA;mainRoof.material=roof;for(const child of castle.children){if(child.geometry?.type==='ConeGeometry'&&child!==mainRoof)child.material=roof;}banner.material.color.setHex(forest?0x466b3b:0x244a78);stone.color.setHex(forest?0x9eaa83:0xb8a58a);}
+document.querySelector('#styleA').onclick=()=>setStyle(false);document.querySelector('#styleB').onclick=()=>setStyle(true);
+document.querySelector('#upgrade').onclick=()=>{level++;document.querySelector('#level').textContent=level;const scale=1+Math.min(level-1,8)*.035;castle.scale.setScalar(scale)};
+let down=false,lastX=0,lastY=0,rot=.0,tilt=.0;
+renderer.domElement.addEventListener('pointerdown',e=>{down=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
+renderer.domElement.addEventListener('pointerup',()=>down=false);
+renderer.domElement.addEventListener('pointercancel',()=>down=false);
+renderer.domElement.addEventListener('pointermove',e=>{if(!down)return;rot+=(e.clientX-lastX)*.008;tilt=Math.max(-.25,Math.min(.45,tilt+(e.clientY-lastY)*.004));lastX=e.clientX;lastY=e.clientY});
+renderer.domElement.addEventListener('wheel',e=>{camera.position.multiplyScalar(e.deltaY>0?1.08:.92);camera.position.clampLength(9,32)});
+function animate(){requestAnimationFrame(animate);const radius=19;camera.position.x=Math.sin(rot)*radius;camera.position.z=Math.cos(rot)*radius;camera.position.y=10+tilt*8;camera.lookAt(0,1,0);renderer.render(scene,camera)}animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body>
+</html>
