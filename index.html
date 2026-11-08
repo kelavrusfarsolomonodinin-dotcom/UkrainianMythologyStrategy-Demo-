@@ -198,7 +198,7 @@ document.querySelector('#panelAction').onclick=()=>toast('Этот раздел 
 function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2100)}
 // Локальная панель тестирования создателя: не является серверной системой прав.
 const creatorPanel=document.querySelector("#creatorPanel");
-function updateCreatorStats(){document.querySelector("#creatorStats").innerHTML=`Замок: уровень <b>${level}</b><br>Базальт: <b>${basalt.toLocaleString("ru-RU")}</b> · Древесина: <b>${wood.toLocaleString("ru-RU")}</b><br>Кристаллы: <b>${crystals.toLocaleString("ru-RU")}</b> · Короны: <b>${crowns.toLocaleString("ru-RU")}</b><br>Войска: ${Object.entries(troops).map(([n,v])=>n+" "+v).join(" · ")}`}
+function updateCreatorStats(){document.querySelector("#creatorStats").innerHTML=`Замок: уровень <b>${level}</b><br>Базальт: <b>${basalt.toLocaleString("ru-RU")}</b> · Древесина: <b>${wood.toLocaleString("ru-RU")}</b><br>Кристаллы: <b>${crystals.toLocaleString("ru-RU")}</b> · Короны: <b>${crowns.toLocaleString("ru-RU")}</b><br>Войска: ${Object.entries(troops).map(([n,v])=>n+" "+v).join(" · ")}`;}
 document.querySelector("#creatorToggle").onclick=()=>{updateCreatorStats();creatorPanel.style.display="block"};
 document.querySelector("#creatorClose").onclick=()=>creatorPanel.style.display="none";
 document.querySelectorAll("[data-give]").forEach(b=>b.onclick=()=>{const k=b.dataset.give;if(k==="basalt")basalt+=5000;if(k==="wood")wood+=5000;if(k==="crystals")crystals+=1000;if(k==="crowns")crowns+=100;refreshResources();updateCreatorStats();toast("Ресурсы добавлены для теста")});
