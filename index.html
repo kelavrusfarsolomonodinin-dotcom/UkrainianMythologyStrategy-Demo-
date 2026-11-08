@@ -14,6 +14,8 @@
 .chip{background:var(--glass);border:1px solid var(--line);border-radius:11px;padding:8px 10px;font-size:11px;box-shadow:0 5px 18px #0005;backdrop-filter:blur(8px);white-space:nowrap}
 .chip b{color:#f5d69a;font-size:12px}.realm{font-weight:800;letter-spacing:.08em;color:#f4d59a}
 .bottom{bottom:10px;justify-content:center;gap:6px;flex-wrap:wrap}
+#travel{position:fixed;z-index:4;left:50%;top:76px;transform:translateX(-50%);pointer-events:auto;padding:11px 18px;border-radius:14px;background:linear-gradient(180deg,#78613a,#392d1b);border:1px solid #f0d49b;color:#fff0d1;font-weight:800;white-space:nowrap}
+body.outside #travel{background:linear-gradient(180deg,#315d6b,#17343e)}
 button{font:inherit;color:var(--cream);border:1px solid var(--line);background:linear-gradient(180deg,#34463e,#172822);border-radius:12px;padding:10px 12px;box-shadow:0 5px 18px #0007;cursor:pointer;touch-action:manipulation}
 button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weight:650}.nav span{display:block;font-size:18px;margin-bottom:2px}
 #hint{position:fixed;z-index:2;top:68px;left:50%;transform:translateX(-50%);padding:7px 11px;border-radius:9px;background:#101b1bd9;border:1px solid #b89a6755;color:#e9d7b7;font-size:11px;white-space:nowrap;pointer-events:none}
@@ -34,14 +36,25 @@ button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weigh
   <div class="chip">✧ <b>120</b></div>
  </div>
 </div>
-<div id="hint">Проводи пальцем — вращай мир · коснись здания</div>
+<button id="travel">↗ Выйти за пределы замка</button>
+<div id="hint">Внутри замка · управление владением</div>
 <div class="hud bottom">
+ <div id="castleMenu">
  <button class="nav" data-open="Казармы"><span>⚔</span>Войска</button>
  <button class="nav" data-open="Кузница"><span>⚒</span>Кузница</button>
  <button class="nav" data-open="Академия"><span>✧</span>Знания</button>
  <button class="nav" data-open="Лазарет"><span>✚</span>Лазарет</button>
+ <button class="nav" data-open="Склад"><span>▣</span>Склад</button>
+ <button class="nav" data-open="Святилище"><span>♜</span>Святилище</button>
+ </div>
+ <div id="outsideMenu" style="display:none">
+ <button class="nav" data-open="Карта мира"><span>◎</span>Карта</button>
+ <button class="nav" data-open="Добыча ресурсов"><span>⛏</span>Ресурсы</button>
+ <button class="nav" data-open="Монстры"><span>🐉</span>Монстры</button>
+ <button class="nav" data-open="Походы"><span>⚔</span>Походы</button>
  <button class="nav" data-open="Альянс"><span>♜</span>Альянс</button>
- <button class="nav" data-open="Карта мира"><span>◎</span>Мир</button>
+ <button class="nav" data-open="События"><span>✦</span>События</button>
+ </div>
 </div>
 <div id="panel"><button id="close">✕</button><h2 id="panelTitle">Здание</h2><div class="sub" id="panelLevel">Уровень 1 · Цитадель</div><p id="panelText"></p><div class="row"><button id="upgrade">Улучшить · 250 ⛰</button><button id="panelAction">Подробнее</button></div></div>
 <div id="toast"></div>
@@ -118,7 +131,12 @@ const descriptions={
 'Лазарет':'Здесь восстанавливаются раненые воины. Помощь союзников может ускорить лечение.',
 'Святилище':'Место почитания покровителя альянса. Здесь хранятся обеты, символы и история союза.',
 'Альянс':'Общий зал союза: участники, казна, технологии, помощь и совместная защита.',
-'Карта мира':'Карта земель, планетарных ресурсов, соседних поселений и мест для походов.'
+'Карта мира':'Карта внешнего мира: территории, соседние владения, нейтральные зоны и маршруты походов.',
+'Склад':'Хранилище базальта, древесины, кристаллов и материалов для развития владения.',
+'Добыча ресурсов':'Месторождения базальта, лесные участки и планетарные ресурсные точки.',
+'Монстры':'На внешних территориях обитают мифические существа. Здесь можно обнаруживать цели для охоты.',
+'Походы':'Разведка, сбор ресурсов, охота и военные операции за пределами владения.',
+'События':'Сезонные испытания, порталы между мирами и общие задания игроков.'
 };
 function openPanel(name){active=name;document.querySelector('#panelTitle').textContent=name;document.querySelector('#panelText').textContent=descriptions[name]||'Раздел демонстрационной версии.';document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;document.querySelector('#panel').style.display='block'}
 document.querySelector('#close').onclick=()=>document.querySelector('#panel').style.display='none';
@@ -126,14 +144,25 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openPanel(b.da
 document.querySelector('#upgrade').onclick=()=>{if(basalt<250){toast('Недостаточно базальта');return}basalt-=250;level++;document.querySelector('#level').textContent=level;document.querySelector('#basalt').textContent=basalt.toLocaleString('ru-RU');document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;castle.scale.setScalar(1+Math.min(level-1,6)*.025);toast('Уровень улучшен · это локальная демонстрация')};
 document.querySelector('#panelAction').onclick=()=>toast('Этот раздел будет развиваться в следующих версиях');
 function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2100)}
+// Отдельное внешнее пространство за пределами замка
+const outer=new THREE.Group();scene.add(outer);
+function crystalNode(x,z){const g=new THREE.Group();g.position.set(x,0,z);outer.add(g);for(let i=0;i<5;i++){const q=mesh(new THREE.OctahedronGeometry(.5+Math.random()*.3,0),mat(0x55a6a4,.25,.35),(Math.random()-.5)*1.1,.65+Math.random()*.6,(Math.random()-.5)*1.1,g);q.rotation.z=Math.random()*.5}cylinder(1.2,1.5,.35,x,.12,z,darkStone,outer,8)}
+crystalNode(-20,-8);crystalNode(20,9);
+function outpost(x,z){const g=new THREE.Group();g.position.set(x,0,z);outer.add(g);cylinder(1.8,2.1,.6,0,.3,0,darkStone,g,10);for(let i=0;i<3;i++){const tent=mesh(new THREE.ConeGeometry(1.15,2.1,4),i===0?roof:roofGreen,(i-1)*1.45,1.3,0,g);tent.rotation.y=Math.PI/4}cylinder(.14,.18,1.8,0,1.1,2.2,wood,g,8);mesh(new THREE.PlaneGeometry(.9,.65),new THREE.MeshStandardMaterial({color:0x853d32,side:THREE.DoubleSide}),.48,1.65,2.2,g)}
+outpost(-21,10);outpost(21,-12);
+for(let i=0;i<8;i++){const a=i*Math.PI/4,r=25+Math.random()*4;const x=Math.cos(a)*r,z=Math.sin(a)*r;const monster=mesh(new THREE.DodecahedronGeometry(.8,1),mat(0x5b5148),x,.7,z,outer);monster.scale.y=.8}
+let mode='castle';const cameraTarget=new THREE.Vector3(0,2,0);
+const travel=document.querySelector('#travel');
+function setMode(next){mode=next;const outside=mode==='outside';document.body.classList.toggle('outside',outside);document.querySelector('#castleMenu').style.display=outside?'none':'flex';document.querySelector('#outsideMenu').style.display=outside?'flex':'none';document.querySelector('#hint').textContent=outside?'Внешний мир · ресурсы, походы и другие владения':'Внутри замка · управление владением';travel.textContent=outside?'↙ Вернуться в замок':'↗ Выйти за пределы замка';buildings.forEach(b=>b.group.visible=!outside);cameraTarget.set(0,outside?0:2,0);zoom=outside?39:25;tilt=0;document.querySelector('#panel').style.display='none'}
+travel.onclick=()=>setMode(mode==='castle'?'outside':'castle');
 // Выбор здания касанием через raycaster
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=false,dragged=false,lastX=0,lastY=0,rotation=.45,zoom=25,tilt=0;
 renderer.domElement.addEventListener('pointerdown',e=>{down=true;dragged=false;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
 renderer.domElement.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;if(Math.abs(dx)+Math.abs(dy)>4)dragged=true;rotation+=dx*.006;tilt=Math.max(-.12,Math.min(.35,tilt+dy*.002));lastX=e.clientX;lastY=e.clientY});
-renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;down=false;if(!dragged){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;ray.setFromCamera(pointer,camera);const targets=buildings.flatMap(b=>b.group.children);const hit=ray.intersectObjects(targets,true)[0];if(hit){const b=buildings.find(v=>v.group===hit.object.parent||v.group===hit.object.parent?.parent);if(b)openPanel(b.name)}}});
+renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;down=false;if(!dragged){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;ray.setFromCamera(pointer,camera);if(mode==='castle'){const targets=buildings.flatMap(b=>b.group.children);const hit=ray.intersectObjects(targets,true)[0];if(hit){const b=buildings.find(v=>v.group===hit.object.parent||v.group===hit.object.parent?.parent);if(b)openPanel(b.name)}}else{toast('Внешняя территория · выбери раздел в нижнем меню')}}});
 renderer.domElement.addEventListener('pointercancel',()=>down=false);
 renderer.domElement.addEventListener('wheel',e=>{zoom=Math.max(17,Math.min(34,zoom+e.deltaY*.018))},{passive:true});
-function animate(){requestAnimationFrame(animate);camera.position.set(Math.sin(rotation)*zoom,10+tilt*10,Math.cos(rotation)*zoom);camera.lookAt(0,2,0);flag.rotation.y=Math.sin(performance.now()*.0018)*.12;renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);camera.position.set(Math.sin(rotation)*zoom,(mode==='outside'?15:10)+tilt*10,Math.cos(rotation)*zoom);camera.lookAt(cameraTarget);flag.rotation.y=Math.sin(performance.now()*.0018)*.12;renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body>
