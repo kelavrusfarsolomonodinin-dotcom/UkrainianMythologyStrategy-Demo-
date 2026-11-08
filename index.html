@@ -206,10 +206,11 @@ const worldChunks=[];
   const group=chunks.get(key);obj.position.x-=group.position.x;obj.position.z-=group.position.z;group.add(obj);
  }
 }
+outer.visible=false;
 let mode='castle';const cameraTarget=new THREE.Vector3(0,2,0);
 function updateWorldChunks(){const radius=Math.max(22,zoom*1.35);for(const chunk of worldChunks){const dx=chunk.x-cameraTarget.x,dz=chunk.z-cameraTarget.z;chunk.group.visible=Math.hypot(dx,dz)<radius+12}}
 const travel=document.querySelector('#travel');
-function setMode(next){mode=next;const outside=mode==='outside';document.body.classList.toggle('outside',outside);document.querySelector('#castleMenu').style.display=outside?'none':'flex';document.querySelector('#outsideMenu').style.display=outside?'flex':'none';document.querySelector('#hint').textContent=outside?'Круглый мир · координатная сетка · перетаскивай одним пальцем':'Внутри замка · перетаскивай одним пальцем, двумя пальцами — масштаб и поворот';travel.textContent=outside?'↙ Вернуться в замок':'↗ Выйти за пределы замка';buildings.forEach(b=>b.group.visible=!outside);worldGrid.visible=outside;worldBoundary.visible=outside;cameraTarget.set(0,outside?0:2,0);zoom=outside?39:22;updateWorldChunks();polar=1.05;rotation=.45;document.querySelector('#panel').style.display='none'}
+function setMode(next){mode=next;const outside=mode==='outside';document.body.classList.toggle('outside',outside);document.querySelector('#castleMenu').style.display=outside?'none':'flex';document.querySelector('#outsideMenu').style.display=outside?'flex':'none';document.querySelector('#hint').textContent=outside?'Круглый мир · координатная сетка · перетаскивай одним пальцем':'Внутри замка · перетаскивай одним пальцем, двумя пальцами — масштаб и поворот';travel.textContent=outside?'↙ Вернуться в замок':'↗ Выйти за пределы замка';buildings.forEach(b=>b.group.visible=!outside);outer.visible=outside;worldGrid.visible=outside;worldBoundary.visible=outside;cameraTarget.set(0,outside?0:2,0);zoom=outside?39:22;updateWorldChunks();polar=1.05;rotation=.45;document.querySelector('#panel').style.display='none'}
 travel.onclick=()=>setMode(mode==='castle'?'outside':'castle');
 // Выбор здания касанием через raycaster
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
