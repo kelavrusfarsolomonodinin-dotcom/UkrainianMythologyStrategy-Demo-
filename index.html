@@ -56,7 +56,7 @@ button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weigh
  <button class="nav" data-open="События"><span>✦</span>События</button>
  </div>
 </div>
-<div id="panel"><button id="close">✕</button><h2 id="panelTitle">Здание</h2><div class="sub" id="panelLevel">Уровень 1 · Цитадель</div><p id="panelText"></p><div class="row"><button id="upgrade">Улучшить · 250 ⛰</button><button id="panelAction">Подробнее</button></div></div>
+<div id="panel"><button id="close">✕</button><h2 id="panelTitle">Здание</h2><div class="sub" id="panelLevel">Уровень 1 · Цитадель</div><p id="panelText"></p><div id="panelExtras"></div><div class="row"><button id="upgrade">Улучшить · 250 ⛰</button><button id="panelAction">Подробнее</button></div></div>
 <div id="toast"></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -122,7 +122,23 @@ for(let i=0;i<5;i++)box(2.8-i*.35,.18,.42,0,.2+i*.18,6.1+i*.35,lightStone,castle
 // внутренний двор
 const yard=mesh(new THREE.CircleGeometry(3.7,32),mat(0x8d876d),0,.49,-.35,castle);yard.rotation.x=-Math.PI/2;
 for(let i=0;i<4;i++){const a=i*Math.PI/2;const col=cylinder(.12,.16,2.2,Math.cos(a)*3.25,1.6,-.35+Math.sin(a)*3.25,bronze,castle,10);}
-// отдельные здания с округлыми формами и крышами
+
+// Стража во внутреннем дворе: объёмные фигуры воинов, а не плоские значки.
+const guards=new THREE.Group();castle.add(guards);
+function makeGuard(x,z,turn=0){
+ const g=new THREE.Group();g.position.set(x,.5,z);g.rotation.y=turn;guards.add(g);
+ const armor=mat(0x344b4b,.55,.35),cloth=mat(0x7c3d32),skin=mat(0xc99a72),gold=mat(0xc49a55,.4,.55);
+ cylinder(.24,.3,.72,0,1.05,0,armor,g,10);
+ sphere(.22,0,1.62,0,skin,g);
+ cylinder(.25,.27,.25,0,1.84,0,gold,g,10);
+ box(.48,.48,.12,-.36,1.08,.08,armor,g);
+ cylinder(.045,.045,1.65,.48,1.18,0,wood,g,8);
+ mesh(new THREE.ConeGeometry(.12,.35,8),gold,.48,2.08,0,g);
+ const cape=box(.42,.68,.08,0,1.05,-.2,cloth,g);cape.rotation.x=-.12;
+ return g;
+}
+makeGuard(-2.4,2,.25);makeGuard(2.4,2,-.25);makeGuard(-3.4,4,.5);makeGuard(3.4,4,-.5);
+\n// отдельные здания с округлыми формами и крышами
 const buildings=[];
 function building(name,x,z,kind){const g=new THREE.Group();g.position.set(x,.45,z);scene.add(g);let base;
 if(kind==='round'){base=cylinder(.9,1.05,1.35,0,.68,0,lightStone,g,12);cylinder(1.02,1.02,.16,0,1.38,0,bronze,g,12);mesh(new THREE.ConeGeometry(1.08,1.25,12),roofGreen,0,2.05,0,g);cylinder(.08,.08,.5,0,2.9,0,bronze,g,8)}
@@ -133,6 +149,10 @@ building('Святилище',0,-10,'round');
 // маленькие сторожевые костры и каменные фонари
 for(const p of [[-3,8],[3,8],[-10,-4],[10,-4]]){cylinder(.22,.28,.65,p[0],.75,p[1],darkStone);const flame=sphere(.18,p[0],1.25,p[1],mat(0xf0a94d,.25));flame.scale.y=1.7}
 let level=1,basalt=1250,active=null;
+const troops={Пехота:0,Лучники:0,Стража:0};
+const troopCosts={Пехота:100,Лучники:140,Стража:220};
+function refreshResources(){document.querySelector('#basalt').textContent=basalt.toLocaleString('ru-RU')}
+function renderTroops(){const e=document.querySelector('#panelExtras');e.innerHTML='<div class="sub">СОСТАВ ВОЙСК</div>'+Object.keys(troops).map(n=>'<div class="row"><span style="flex:1;font-size:13px">'+n+': <b>'+troops[n]+'</b></span><button data-recruit="'+n+'" style="flex:1">Нанять · '+troopCosts[n]+' ⛰</button></div>').join('')+'<p class="sub">Набор учебный: стоимость списывается из базальта, численность сохраняется в этой демонстрации.</p>';e.querySelectorAll('[data-recruit]').forEach(b=>b.onclick=()=>{const n=b.dataset.recruit,cost=troopCosts[n];if(basalt<cost){toast('Недостаточно базальта');return}basalt-=cost;troops[n]++;refreshResources();renderTroops();toast(n+' наняты · всего '+troops[n])})}
 const descriptions={
 'Казармы':'Здесь готовятся отряды защитников. Улучшение открывает новые уровни подготовки и увеличивает вместимость войск.',
 'Кузница':'Мастера создают детали брони, оружие и усиления для кораблей и защитных сооружений.',
@@ -147,7 +167,7 @@ const descriptions={
 'Походы':'Разведка, сбор ресурсов, охота и военные операции за пределами владения.',
 'События':'Сезонные испытания, порталы между мирами и общие задания игроков.'
 };
-function openPanel(name){active=name;document.querySelector('#panelTitle').textContent=name;document.querySelector('#panelText').textContent=descriptions[name]||'Раздел демонстрационной версии.';document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;document.querySelector('#panel').style.display='block'}
+function openPanel(name){active=name;document.querySelector('#panelTitle').textContent=name;document.querySelector('#panelText').textContent=descriptions[name]||'Раздел демонстрационной версии.';document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;document.querySelector('#panelExtras').innerHTML='';document.querySelector('#upgrade').style.display=name==='Казармы'?'none':'block';document.querySelector('#panelAction').style.display=name==='Казармы'?'none':'block';if(name==='Казармы')renderTroops();document.querySelector('#panel').style.display='block'}
 document.querySelector('#close').onclick=()=>document.querySelector('#panel').style.display='none';
 document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openPanel(b.dataset.open));
 document.querySelector('#upgrade').onclick=()=>{if(basalt<250){toast('Недостаточно базальта');return}basalt-=250;level++;document.querySelector('#level').textContent=level;document.querySelector('#basalt').textContent=basalt.toLocaleString('ru-RU');document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;castle.scale.setScalar(1+Math.min(level-1,6)*.025);toast('Уровень улучшен · это локальная демонстрация')};
