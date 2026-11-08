@@ -76,7 +76,10 @@ function box(w,h,d,x,y,z,material,parent=scene){return mesh(new THREE.BoxGeometr
 function cylinder(rt,rb,h,x,y,z,material,parent=scene,segments=12){return mesh(new THREE.CylinderGeometry(rt,rb,h,segments),material,x,y,z,parent)}
 function sphere(r,x,y,z,material,parent=scene){return mesh(new THREE.SphereGeometry(r,10,8),material,x,y,z,parent)}
 // Ландшафт, холмы и каменная площадка
-mesh(new THREE.PlaneGeometry(180,180),grass,0,-.5,0).rotation.x=-Math.PI/2;
+// Мировая карта: круглая суша на фоне океана.
+mesh(new THREE.PlaneGeometry(180,180),water,0,-.56,0).rotation.x=-Math.PI/2;
+const worldLand=mesh(new THREE.CircleGeometry(40,128),grass,0,-.49,0);worldLand.rotation.x=-Math.PI/2;
+const coast=mesh(new THREE.TorusGeometry(39.85,.28,8,160),lightStone,0,-.27,0);coast.rotation.x=Math.PI/2;
 const plateau=mesh(new THREE.CylinderGeometry(14.8,16.2,.9,48),moss,0,-.05,0);plateau.scale.z=.82;
 mesh(new THREE.CylinderGeometry(13.9,14.3,.18,48),lightStone,0,.39,0).scale.z=.82;
 const roadMat=mat(0x9b8a6d);
@@ -138,7 +141,7 @@ function makeGuard(x,z,turn=0){
  return g;
 }
 makeGuard(-2.4,2,.25);makeGuard(2.4,2,-.25);makeGuard(-3.4,4,.5);makeGuard(3.4,4,-.5);
-\n// отдельные здания с округлыми формами и крышами
+// отдельные здания с округлыми формами и крышами
 const buildings=[];
 function building(name,x,z,kind){const g=new THREE.Group();g.position.set(x,.45,z);scene.add(g);let base;
 if(kind==='round'){base=cylinder(.9,1.05,1.35,0,.68,0,lightStone,g,12);cylinder(1.02,1.02,.16,0,1.38,0,bronze,g,12);mesh(new THREE.ConeGeometry(1.08,1.25,12),roofGreen,0,2.05,0,g);cylinder(.08,.08,.5,0,2.9,0,bronze,g,8)}
@@ -175,16 +178,38 @@ document.querySelector('#panelAction').onclick=()=>toast('Этот раздел 
 function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2100)}
 // Отдельное внешнее пространство за пределами замка
 const outer=new THREE.Group();scene.add(outer);
-// Квадратная стратегическая сетка внешней карты: 20 x 20 клеток по 4 единицы.
-const worldGrid=new THREE.GridHelper(80,20,0x9db8a8,0x61776b);worldGrid.position.y=.025;worldGrid.visible=false;scene.add(worldGrid);
+// Координатная сетка 20 x 20 с шагом 4, обрезанная по круглой границе.
+const worldGrid=new THREE.Group();worldGrid.visible=false;scene.add(worldGrid);
+const gridMinor=new THREE.LineBasicMaterial({color:0x9db8a8,transparent:true,opacity:.34});
+const gridMajor=new THREE.LineBasicMaterial({color:0xc4b28b,transparent:true,opacity:.62});
+function addGridLine(points,material){const geo=new THREE.BufferGeometry().setFromPoints(points);const line=new THREE.Line(geo,material);line.position.y=.035;worldGrid.add(line)}
+const worldRadius=40,gridStep=4;
+for(let v=-worldRadius;v<=worldRadius+.001;v+=gridStep){
+ const chord=Math.sqrt(Math.max(0,worldRadius*worldRadius-v*v));
+ const major=(Math.round((v+worldRadius)/gridStep)%4===0);
+ addGridLine([new THREE.Vector3(v,0,-chord),new THREE.Vector3(v,0,chord)],major?gridMajor:gridMinor);
+ addGridLine([new THREE.Vector3(-chord,0,v),new THREE.Vector3(chord,0,v)],major?gridMajor:gridMinor);
+}
+const worldBoundary=mesh(new THREE.TorusGeometry(40,.16,8,160),bronze,0,.08,0);worldBoundary.rotation.x=Math.PI/2;worldBoundary.visible=false;
 function crystalNode(x,z){const g=new THREE.Group();g.position.set(x,0,z);outer.add(g);for(let i=0;i<5;i++){const q=mesh(new THREE.OctahedronGeometry(.5+Math.random()*.3,0),mat(0x55a6a4,.25,.35),(Math.random()-.5)*1.1,.65+Math.random()*.6,(Math.random()-.5)*1.1,g);q.rotation.z=Math.random()*.5}cylinder(1.2,1.5,.35,x,.12,z,darkStone,outer,8)}
 crystalNode(-20,-8);crystalNode(20,9);
 function outpost(x,z){const g=new THREE.Group();g.position.set(x,0,z);outer.add(g);cylinder(1.8,2.1,.6,0,.3,0,darkStone,g,10);for(let i=0;i<3;i++){const tent=mesh(new THREE.ConeGeometry(1.15,2.1,4),i===0?roof:roofGreen,(i-1)*1.45,1.3,0,g);tent.rotation.y=Math.PI/4}cylinder(.14,.18,1.8,0,1.1,2.2,wood,g,8);mesh(new THREE.PlaneGeometry(.9,.65),new THREE.MeshStandardMaterial({color:0x853d32,side:THREE.DoubleSide}),.48,1.65,2.2,g)}
 outpost(-21,10);outpost(21,-12);
 for(let i=0;i<8;i++){const a=i*Math.PI/4,r=25+Math.random()*4;const x=Math.cos(a)*r,z=Math.sin(a)*r;const monster=mesh(new THREE.DodecahedronGeometry(.8,1),mat(0x5b5148),x,.7,z,outer);monster.scale.y=.8}
+// Внешние объекты сгруппированы по секторам 16 x 16 для показа только ближайших.
+const worldChunks=[];
+{
+ const objects=[...outer.children],chunks=new Map();outer.clear();
+ for(const obj of objects){
+  const cx=Math.floor((obj.position.x+40)/16),cz=Math.floor((obj.position.z+40)/16),key=cx+':'+cz;
+  if(!chunks.has(key)){const group=new THREE.Group();group.position.set(cx*16-32,0,cz*16-32);outer.add(group);chunks.set(key,group);worldChunks.push({group,x:group.position.x,z:group.position.z})}
+  const group=chunks.get(key);obj.position.x-=group.position.x;obj.position.z-=group.position.z;group.add(obj);
+ }
+}
 let mode='castle';const cameraTarget=new THREE.Vector3(0,2,0);
+function updateWorldChunks(){const radius=Math.max(22,zoom*1.35);for(const chunk of worldChunks){const dx=chunk.x-cameraTarget.x,dz=chunk.z-cameraTarget.z;chunk.group.visible=Math.hypot(dx,dz)<radius+12}}
 const travel=document.querySelector('#travel');
-function setMode(next){mode=next;const outside=mode==='outside';document.body.classList.toggle('outside',outside);document.querySelector('#castleMenu').style.display=outside?'none':'flex';document.querySelector('#outsideMenu').style.display=outside?'flex':'none';document.querySelector('#hint').textContent=outside?'Карта мира · сетка 20 × 20 · перетаскивай одним пальцем':'Внутри замка · перетаскивай одним пальцем, двумя пальцами — масштаб и поворот';travel.textContent=outside?'↙ Вернуться в замок':'↗ Выйти за пределы замка';buildings.forEach(b=>b.group.visible=!outside);worldGrid.visible=outside;cameraTarget.set(0,outside?0:2,0);zoom=outside?39:22;polar=1.05;rotation=.45;document.querySelector('#panel').style.display='none'}
+function setMode(next){mode=next;const outside=mode==='outside';document.body.classList.toggle('outside',outside);document.querySelector('#castleMenu').style.display=outside?'none':'flex';document.querySelector('#outsideMenu').style.display=outside?'flex':'none';document.querySelector('#hint').textContent=outside?'Круглый мир · координатная сетка · перетаскивай одним пальцем':'Внутри замка · перетаскивай одним пальцем, двумя пальцами — масштаб и поворот';travel.textContent=outside?'↙ Вернуться в замок':'↗ Выйти за пределы замка';buildings.forEach(b=>b.group.visible=!outside);worldGrid.visible=outside;worldBoundary.visible=outside;cameraTarget.set(0,outside?0:2,0);zoom=outside?39:22;updateWorldChunks();polar=1.05;rotation=.45;document.querySelector('#panel').style.display='none'}
 travel.onclick=()=>setMode(mode==='castle'?'outside':'castle');
 // Выбор здания касанием через raycaster
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -197,13 +222,13 @@ renderer.domElement.style.touchAction='none';
 renderer.domElement.addEventListener('pointerdown',e=>{e.preventDefault();pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});try{renderer.domElement.setPointerCapture(e.pointerId)}catch(_){}gestureMoved=false;if(pointers.size===1)lastSingle={x:e.clientX,y:e.clientY};if(pointers.size===2){lastPinch=pinchDistance();lastPinchAngle=pinchAngle();lastSingle=null}});
 renderer.domElement.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;e.preventDefault();pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(pointers.size>=2){const d=pinchDistance(),a=pinchAngle();if(lastPinch>0&&d>0){zoom=clamp(zoom*lastPinch/d,mode==='outside'?18:10,mode==='outside'?72:42);const da=Math.atan2(Math.sin(a-lastPinchAngle),Math.cos(a-lastPinchAngle));rotation+=da;if(Math.abs(d-lastPinch)>1||Math.abs(da)>.01)gestureMoved=true}lastPinch=d;lastPinchAngle=a;return}
- if(lastSingle){const dx=e.clientX-lastSingle.x,dy=e.clientY-lastSingle.y;if(Math.abs(dx)+Math.abs(dy)>2)gestureMoved=true;const scale=zoom/Math.max(300,innerHeight)*1.8;cameraTarget.x-=dx*scale*Math.cos(rotation);cameraTarget.z+=dx*scale*Math.sin(rotation);cameraTarget.x+=dy*scale*.55*Math.sin(rotation);cameraTarget.z+=dy*scale*.55*Math.cos(rotation);const bound=mode==='outside'?38:9;cameraTarget.x=clamp(cameraTarget.x,-bound,bound);cameraTarget.z=clamp(cameraTarget.z,-bound,bound);lastSingle={x:e.clientX,y:e.clientY}}
+ if(lastSingle){const dx=e.clientX-lastSingle.x,dy=e.clientY-lastSingle.y;if(Math.abs(dx)+Math.abs(dy)>2)gestureMoved=true;const scale=zoom/Math.max(300,innerHeight)*1.8;cameraTarget.x-=dx*scale*Math.cos(rotation);cameraTarget.z+=dx*scale*Math.sin(rotation);cameraTarget.x+=dy*scale*.55*Math.sin(rotation);cameraTarget.z+=dy*scale*.55*Math.cos(rotation);const bound=mode==='outside'?37:9;if(mode==='outside'){const len=Math.hypot(cameraTarget.x,cameraTarget.z);if(len>bound){cameraTarget.x*=bound/len;cameraTarget.z*=bound/len}}else{cameraTarget.x=clamp(cameraTarget.x,-bound,bound);cameraTarget.z=clamp(cameraTarget.z,-bound,bound)}lastSingle={x:e.clientX,y:e.clientY}}
 },{passive:false});
 function finishPointer(e){if(!pointers.has(e.pointerId))return;const wasTap=!gestureMoved&&pointers.size===1;pointers.delete(e.pointerId);lastSingle=null;lastPinch=pointers.size===2?pinchDistance():0;lastPinchAngle=pointers.size===2?pinchAngle():0;if(wasTap){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;ray.setFromCamera(pointer,camera);if(mode==='castle'){const targets=buildings.flatMap(b=>b.group.children);const hit=ray.intersectObjects(targets,true)[0];if(hit){let obj=hit.object;while(obj&&!buildings.some(b=>b.group===obj))obj=obj.parent;const b=buildings.find(v=>v.group===obj);if(b)openPanel(b.name)}}else toast('Выбери раздел в нижнем меню или перемести камеру по клеткам карты')}}
 renderer.domElement.addEventListener('pointerup',finishPointer);
 renderer.domElement.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);lastSingle=null;lastPinch=0;lastPinchAngle=0});
 renderer.domElement.addEventListener('wheel',e=>{zoom=clamp(zoom+e.deltaY*.025,mode==='outside'?18:10,mode==='outside'?72:42)},{passive:true});
-function animate(){requestAnimationFrame(animate);const h=Math.sin(polar)*zoom;camera.position.set(cameraTarget.x+Math.sin(rotation)*h,cameraTarget.y+Math.cos(polar)*zoom,cameraTarget.z+Math.cos(rotation)*h);camera.lookAt(cameraTarget);flag.rotation.y=Math.sin(performance.now()*.0018)*.12;renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);if(mode==='outside')updateWorldChunks();const h=Math.sin(polar)*zoom;camera.position.set(cameraTarget.x+Math.sin(rotation)*h,cameraTarget.y+Math.cos(polar)*zoom,cameraTarget.z+Math.cos(rotation)*h);camera.lookAt(cameraTarget);flag.rotation.y=Math.sin(performance.now()*.0018)*.12;renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body>
