@@ -3,59 +3,137 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Мифологическая стратегия — 3D прототип</title>
+<meta name="theme-color" content="#111b20">
+<title>Предел легенд — 3D мир</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;color:#f4ead7;font-family:system-ui, sans-serif}
-#game{position:fixed;inset:0}canvas{display:block}
-.panel{position:fixed;z-index:2;left:12px;right:12px;display:flex;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}
-.top{top:12px}.bottom{bottom:14px;justify-content:center;flex-wrap:wrap}
-.pill,.action{pointer-events:auto;background:#172433eF;border:1px solid #9b8055;border-radius:12px;color:#f4ead7;padding:10px 13px;font-size:13px;box-shadow:0 4px 18px #0005}
-.action{background:#26394a;font-weight:600}.action:active{transform:scale(.97)}
-#hint{position:fixed;z-index:2;left:50%;top:68px;transform:translateX(-50%);background:#101722c9;padding:7px 12px;border-radius:9px;font-size:12px;white-space:nowrap;color:#e7d8bd}
+:root{--gold:#d7b477;--cream:#f2e5c9;--glass:rgba(15,25,27,.88);--line:rgba(215,180,119,.58)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#182326;color:var(--cream);font-family:system-ui,-apple-system,sans-serif;touch-action:none}
+#game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+.hud{position:fixed;z-index:3;left:10px;right:10px;pointer-events:none;display:flex;gap:7px;align-items:center}
+.top{top:10px;justify-content:space-between}.resources{display:flex;gap:5px;flex-wrap:wrap}
+.chip{background:var(--glass);border:1px solid var(--line);border-radius:11px;padding:8px 10px;font-size:11px;box-shadow:0 5px 18px #0005;backdrop-filter:blur(8px);white-space:nowrap}
+.chip b{color:#f5d69a;font-size:12px}.realm{font-weight:800;letter-spacing:.08em;color:#f4d59a}
+.bottom{bottom:10px;justify-content:center;gap:6px;flex-wrap:wrap}
+button{font:inherit;color:var(--cream);border:1px solid var(--line);background:linear-gradient(180deg,#34463e,#172822);border-radius:12px;padding:10px 12px;box-shadow:0 5px 18px #0007;cursor:pointer;touch-action:manipulation}
+button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weight:650}.nav span{display:block;font-size:18px;margin-bottom:2px}
+#hint{position:fixed;z-index:2;top:68px;left:50%;transform:translateX(-50%);padding:7px 11px;border-radius:9px;background:#101b1bd9;border:1px solid #b89a6755;color:#e9d7b7;font-size:11px;white-space:nowrap;pointer-events:none}
+#panel{display:none;position:fixed;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88vw,360px);padding:18px;background:linear-gradient(145deg,#26372f,#111c1d);border:1px solid var(--gold);border-radius:18px;box-shadow:0 18px 55px #000c}
+#panel h2{margin:0 30px 8px 0;color:#f1d29a;font-size:21px}#panel p{font-size:13px;line-height:1.45;color:#e0d4bd}#panel .sub{color:#b9a783;font-size:11px}#panel .row{display:flex;gap:8px;margin-top:14px}#panel button{flex:1}
+#close{position:absolute;right:12px;top:10px;padding:5px 10px;background:#182321}
+#toast{position:fixed;z-index:6;left:50%;bottom:84px;transform:translateX(-50%);padding:9px 13px;border-radius:10px;background:#17231feF;border:1px solid var(--line);font-size:12px;display:none;white-space:nowrap}
+@media(min-width:700px){.chip{font-size:13px;padding:10px 14px}.nav{font-size:13px;min-width:78px;padding:12px 18px}.nav span{font-size:21px}}
 </style>
 </head>
 <body>
 <div id="game"></div>
-<div class="panel top"><div class="pill">Уровень замка: <b id="level">1</b></div><div class="pill">Ресурсы: <b>1 000</b></div></div>
-<div id="hint">Проводи пальцем, чтобы осмотреть замок</div>
-<div class="panel bottom">
-<button class="action" id="styleA">Стиль Перуна</button>
-<button class="action" id="styleB">Стиль Леса</button>
-<button class="action" id="upgrade">Улучшить замок</button>
+<div class="hud top">
+ <div class="chip"><div class="realm">ВОЛЯ ПРЕДКОВ</div><small>Цитадель · уровень <b id="level">1</b></small></div>
+ <div class="resources">
+  <div class="chip">⛰ <b id="basalt">1 250</b></div>
+  <div class="chip">🌲 <b>860</b></div>
+  <div class="chip">✧ <b>120</b></div>
+ </div>
 </div>
+<div id="hint">Проводи пальцем — вращай мир · коснись здания</div>
+<div class="hud bottom">
+ <button class="nav" data-open="Казармы"><span>⚔</span>Войска</button>
+ <button class="nav" data-open="Кузница"><span>⚒</span>Кузница</button>
+ <button class="nav" data-open="Академия"><span>✧</span>Знания</button>
+ <button class="nav" data-open="Лазарет"><span>✚</span>Лазарет</button>
+ <button class="nav" data-open="Альянс"><span>♜</span>Альянс</button>
+ <button class="nav" data-open="Карта мира"><span>◎</span>Мир</button>
+</div>
+<div id="panel"><button id="close">✕</button><h2 id="panelTitle">Здание</h2><div class="sub" id="panelLevel">Уровень 1 · Цитадель</div><p id="panelText"></p><div class="row"><button id="upgrade">Улучшить · 250 ⛰</button><button id="panelAction">Подробнее</button></div></div>
+<div id="toast"></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const host=document.querySelector('#game');
-const scene=new THREE.Scene(); scene.background=new THREE.Color(0x9aafbd); scene.fog=new THREE.Fog(0x9aafbd,24,65);
-const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100); camera.position.set(12,11,15);
-const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio,1.7)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; host.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xe8f2ff,0x4d4636,2));
-const sun=new THREE.DirectionalLight(0xffedcf,3); sun.position.set(-8,16,9); sun.castShadow=true; scene.add(sun);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x526b55,roughness:1})); ground.rotation.x=-Math.PI/2; ground.position.y=-.12; ground.receiveShadow=true; scene.add(ground);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9ba9a1);scene.fog=new THREE.FogExp2(0x9ba9a1,.018);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,150);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;host.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe4eddf,0x394337,2.1));
+const sun=new THREE.DirectionalLight(0xffdfad,3.1);sun.position.set(-18,28,16);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-24;sun.shadow.camera.right=24;sun.shadow.camera.top=24;sun.shadow.camera.bottom=-24;scene.add(sun);
+const mat=(color,roughness=.85,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+const grass=mat(0x52684a),moss=mat(0x354c39),stone=mat(0xb5a58b),lightStone=mat(0xd0bea0),darkStone=mat(0x716b5d),roof=mat(0x354b50,.7),roofGreen=mat(0x405a42,.7),bronze=mat(0xb58a4b,.38,.65),wood=mat(0x60432d),water=mat(0x416d70,.25,.2);
+function mesh(geo,material,x,y,z,parent=scene){const o=new THREE.Mesh(geo,material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function box(w,h,d,x,y,z,material,parent=scene){return mesh(new THREE.BoxGeometry(w,h,d),material,x,y,z,parent)}
+function cylinder(rt,rb,h,x,y,z,material,parent=scene,segments=12){return mesh(new THREE.CylinderGeometry(rt,rb,h,segments),material,x,y,z,parent)}
+function sphere(r,x,y,z,material,parent=scene){return mesh(new THREE.SphereGeometry(r,10,8),material,x,y,z,parent)}
+// Ландшафт, холмы и каменная площадка
+mesh(new THREE.PlaneGeometry(180,180),grass,0,-.5,0).rotation.x=-Math.PI/2;
+const plateau=mesh(new THREE.CylinderGeometry(14.8,16.2,.9,48),moss,0,-.05,0);plateau.scale.z=.82;
+mesh(new THREE.CylinderGeometry(13.9,14.3,.18,48),lightStone,0,.39,0).scale.z=.82;
+const roadMat=mat(0x9b8a6d);
+const road=mesh(new THREE.PlaneGeometry(5,18),roadMat,0,.51,12);road.rotation.x=-Math.PI/2;
+for(let i=0;i<8;i++){const rock=mesh(new THREE.DodecahedronGeometry(.7+Math.random()*.8,0),mat(0x777b69),-17+Math.random()*34,.1,-15+Math.random()*30);rock.scale.y=.5;}
+// деревья как объёмные кроны, не кубы
+function tree(x,z,s=1){const g=new THREE.Group();g.position.set(x,.35,z);scene.add(g);cylinder(.16*s,.24*s,1.25*s,0,.6*s,0,wood,g,8);for(let i=0;i<3;i++){const c=mesh(new THREE.IcosahedronGeometry((.85-i*.13)*s,1),i===1?moss:grass,0,(1.25+i*.55)*s,0,g);c.scale.set(1,.9,1)}}
+for(const p of [[-12,-8],[-14,-2],[-12,7],[-9,11],[12,-9],[14,-2],[12,7],[9,12],[-17,12],[17,12],[-18,-10],[18,-10]])tree(p[0],p[1],.8+Math.random()*.45);
+// Цитадель и стены
 const castle=new THREE.Group();scene.add(castle);
-const stone=new THREE.MeshStandardMaterial({color:0xb8a58a,roughness:.9}), roofA=new THREE.MeshStandardMaterial({color:0x344d69,roughness:.8}), roofB=new THREE.MeshStandardMaterial({color:0x526d42,roughness:.8}), gold=new THREE.MeshStandardMaterial({color:0xc49a50,metalness:.55,roughness:.35});
-function block(w,h,d,x,y,z,mat,parent=castle){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
-function tower(x,z,roof){block(1.45,2.5,1.45,x,1.25,z,stone);const r=new THREE.Mesh(new THREE.ConeGeometry(1.05,1.5,4),roof);r.position.set(x,3.25,z);r.rotation.y=Math.PI/4;r.castShadow=true;castle.add(r);block(.12,.8,.12,x,4.35,z,gold)}
-const walls=[];
-walls.push(block(8,.9,.55,0,.55,-3.5,stone));walls.push(block(8,.9,.55,0,.55,3.5,stone));walls.push(block(.55,.9,7, -4,.55,0,stone));walls.push(block(.55,.9,7,4,.55,0,stone));
-tower(-4,-3.5,roofA);tower(4,-3.5,roofA);tower(-4,3.5,roofA);tower(4,3.5,roofA);
-block(3,2.7,3,0,1.35,0,stone);
-const mainRoof=new THREE.Mesh(new THREE.ConeGeometry(2.35,2.2,4),roofA);mainRoof.position.set(0,3.8,0);mainRoof.rotation.y=Math.PI/4;mainRoof.castShadow=true;castle.add(mainRoof);
-block(1.5,1.2,.2,0,1.1,1.61,gold);
-const bannerPole=block(.09,2.4,.09,0,5.05,-.2,gold);
-const banner=new THREE.Mesh(new THREE.PlaneGeometry(1.25,.8),new THREE.MeshStandardMaterial({color:0x244a78,side:THREE.DoubleSide}));banner.position.set(.65,5.45,-.2);castle.add(banner);
-const paths=block(2,.06,7,0,-.02,7,new THREE.MeshStandardMaterial({color:0x9a896d}));
-let level=1;
-function setStyle(forest){const roof=forest?roofB:roofA;mainRoof.material=roof;for(const child of castle.children){if(child.geometry?.type==='ConeGeometry'&&child!==mainRoof)child.material=roof;}banner.material.color.setHex(forest?0x466b3b:0x244a78);stone.color.setHex(forest?0x9eaa83:0xb8a58a);}
-document.querySelector('#styleA').onclick=()=>setStyle(false);document.querySelector('#styleB').onclick=()=>setStyle(true);
-document.querySelector('#upgrade').onclick=()=>{level++;document.querySelector('#level').textContent=level;const scale=1+Math.min(level-1,8)*.035;castle.scale.setScalar(scale)};
-let down=false,lastX=0,lastY=0,rot=.0,tilt=.0;
-renderer.domElement.addEventListener('pointerdown',e=>{down=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
-renderer.domElement.addEventListener('pointerup',()=>down=false);
+function cbox(w,h,d,x,y,z,m){return box(w,h,d,x,y,z,m,castle)}
+function ctower(x,z,styleRoof=roof){cylinder(.92,.82,3.4,x,2.05,z,stone,castle,16);cylinder(1.02,.92,.25,x,3.78,z,bronze,castle,16);const cap=mesh(new THREE.ConeGeometry(1.05,1.75,12),styleRoof,x,4.75,z,castle);cap.rotation.y=.12;cylinder(.07,.07,.7,x,5.95,z,bronze,castle,8);sphere(.13,x,6.32,z,bronze,castle);
+for(let k=0;k<8;k++){const a=k*Math.PI/4;cbox(.23,.42,.24,x+Math.cos(a)*.82,3.98,z+Math.sin(a)*.82,lightStone)}
+}
+cbox(10,.95,.8,0,.95,-5.2,stone);cbox(10,.95,.8,0,.95,5.2,stone);cbox(.8,.95,10,-5.2,.95,0,stone);cbox(.8,.95,10,5.2,.95,0,stone);
+for(let i=0;i<12;i++){let x=-4.7+i*.86;cbox(.32,.34,.85,x,1.58,-5.2,lightStone);cbox(.32,.34,.85,x,1.58,5.2,lightStone);let z=-4.7+i*.86;cbox(.85,.34,.32,-5.2,1.58,z,lightStone);cbox(.85,.34,.32,5.2,1.58,z,lightStone)}
+ctower(-5.2,-5.2);ctower(5.2,-5.2);ctower(-5.2,5.2);ctower(5.2,5.2);
+// Главные ворота с аркой
+cbox(2.1,3.4,.8,0,1.7,5.2,stone);cbox(2.1,3.4,.8,0,1.7,5.2,stone);
+const arch=mesh(new THREE.TorusGeometry(1.12,.22,10,24,Math.PI),bronze,0,3.1,5.62,castle);arch.rotation.z=Math.PI;
+cbox(1.65,2.5,.18,0,1.35,5.68,wood);for(let i=-2;i<=2;i++)cbox(.07,2.25,.08,i*.3,1.4,5.55,bronze);
+cbox(2.4,.22,.28,0,2.7,5.55,bronze);
+// центральная резиденция
+cylinder(2.45,2.8,4.1,0,2.45,-.4,lightStone,castle,12);
+cylinder(2.65,2.55,.3,0,4.55,-.4,bronze,castle,12);
+const dome=mesh(new THREE.SphereGeometry(2.05,20,12,0,Math.PI*2,0,Math.PI/2),roof,0,4.7,-.4,castle);dome.scale.y=1.05;
+cylinder(.09,.09,1.2,0,6.8,-.4,bronze,castle,8);sphere(.18,0,7.45,-.4,bronze,castle);
+// окна и декоративные вертикальные колонны
+for(let i=0;i<8;i++){const a=i*Math.PI/4;const x=Math.sin(a)*2.5,z=-.4+Math.cos(a)*2.5;const w=mesh(new THREE.SphereGeometry(.28,10,10),mat(0xf2c879,.3,.1),x,2.7,z,castle);w.scale.set(.55,1.3,.25)}
+// флаг
+cylinder(.055,.055,3.4,-.4,8.1,-.4,bronze,castle,8);
+const flag=mesh(new THREE.PlaneGeometry(1.65,1.05),new THREE.MeshStandardMaterial({color:0x1e5360,side:THREE.DoubleSide,roughness:.8}),.43,8.65,-.4,castle);
+const emblem=mesh(new THREE.TorusGeometry(.27,.07,8,16),bronze,.43,8.65,-.37,castle);emblem.scale.y=1.25;
+// внутренний двор
+const yard=mesh(new THREE.CircleGeometry(3.7,32),mat(0x8d876d),0,.49,-.35,castle);yard.rotation.x=-Math.PI/2;
+for(let i=0;i<4;i++){const a=i*Math.PI/2;const col=cylinder(.12,.16,2.2,Math.cos(a)*3.25,1.6,-.35+Math.sin(a)*3.25,bronze,castle,10);}
+// отдельные здания с округлыми формами и крышами
+const buildings=[];
+function building(name,x,z,kind){const g=new THREE.Group();g.position.set(x,.45,z);scene.add(g);let base;
+if(kind==='round'){base=cylinder(.9,1.05,1.35,0,.68,0,lightStone,g,12);cylinder(1.02,1.02,.16,0,1.38,0,bronze,g,12);mesh(new THREE.ConeGeometry(1.08,1.25,12),roofGreen,0,2.05,0,g);cylinder(.08,.08,.5,0,2.9,0,bronze,g,8)}
+else{base=mesh(new THREE.BoxGeometry(1.9,1.3,1.7),lightStone,0,.68,0,g);mesh(new THREE.ConeGeometry(1.45,1.15,4),kind==='forge'?roof:roofGreen,0,1.85,0,g).rotation.y=Math.PI/4;box(.45,.85,.1,0,.55,.88,wood,g);for(let i=-1;i<=1;i++)box(.18,.36,.08,i*.55,1,.87,bronze,g)}
+const badge=sphere(.14,0,kind==='round'?3.05:2.5,0,bronze,g);buildings.push({name,group:g,kind});return g}
+building('Казармы',-8,1,'round');building('Кузница',8,1,'forge');building('Академия',-7,-7,'forge');building('Лазарет',7,-7,'round');
+building('Святилище',0,-10,'round');
+// маленькие сторожевые костры и каменные фонари
+for(const p of [[-3,8],[3,8],[-10,-4],[10,-4]]){cylinder(.22,.28,.65,p[0],.75,p[1],darkStone);const flame=sphere(.18,p[0],1.25,p[1],mat(0xf0a94d,.25));flame.scale.y=1.7}
+let level=1,basalt=1250,active=null;
+const descriptions={
+'Казармы':'Здесь готовятся отряды защитников. Улучшение открывает новые уровни подготовки и увеличивает вместимость войск.',
+'Кузница':'Мастера создают детали брони, оружие и усиления для кораблей и защитных сооружений.',
+'Академия':'Исследования древних знаний ускоряют развитие поселения и открывают новые возможности.',
+'Лазарет':'Здесь восстанавливаются раненые воины. Помощь союзников может ускорить лечение.',
+'Святилище':'Место почитания покровителя альянса. Здесь хранятся обеты, символы и история союза.',
+'Альянс':'Общий зал союза: участники, казна, технологии, помощь и совместная защита.',
+'Карта мира':'Карта земель, планетарных ресурсов, соседних поселений и мест для походов.'
+};
+function openPanel(name){active=name;document.querySelector('#panelTitle').textContent=name;document.querySelector('#panelText').textContent=descriptions[name]||'Раздел демонстрационной версии.';document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;document.querySelector('#panel').style.display='block'}
+document.querySelector('#close').onclick=()=>document.querySelector('#panel').style.display='none';
+document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openPanel(b.dataset.open));
+document.querySelector('#upgrade').onclick=()=>{if(basalt<250){toast('Недостаточно базальта');return}basalt-=250;level++;document.querySelector('#level').textContent=level;document.querySelector('#basalt').textContent=basalt.toLocaleString('ru-RU');document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;castle.scale.setScalar(1+Math.min(level-1,6)*.025);toast('Уровень улучшен · это локальная демонстрация')};
+document.querySelector('#panelAction').onclick=()=>toast('Этот раздел будет развиваться в следующих версиях');
+function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2100)}
+// Выбор здания касанием через raycaster
+const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let down=false,dragged=false,lastX=0,lastY=0,rotation=.45,zoom=25,tilt=0;
+renderer.domElement.addEventListener('pointerdown',e=>{down=true;dragged=false;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
+renderer.domElement.addEventListener('pointermove',e=>{if(!down)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;if(Math.abs(dx)+Math.abs(dy)>4)dragged=true;rotation+=dx*.006;tilt=Math.max(-.12,Math.min(.35,tilt+dy*.002));lastX=e.clientX;lastY=e.clientY});
+renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;down=false;if(!dragged){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;ray.setFromCamera(pointer,camera);const targets=buildings.flatMap(b=>b.group.children);const hit=ray.intersectObjects(targets,true)[0];if(hit){const b=buildings.find(v=>v.group===hit.object.parent||v.group===hit.object.parent?.parent);if(b)openPanel(b.name)}}});
 renderer.domElement.addEventListener('pointercancel',()=>down=false);
-renderer.domElement.addEventListener('pointermove',e=>{if(!down)return;rot+=(e.clientX-lastX)*.008;tilt=Math.max(-.25,Math.min(.45,tilt+(e.clientY-lastY)*.004));lastX=e.clientX;lastY=e.clientY});
-renderer.domElement.addEventListener('wheel',e=>{camera.position.multiplyScalar(e.deltaY>0?1.08:.92);camera.position.clampLength(9,32)});
-function animate(){requestAnimationFrame(animate);const radius=19;camera.position.x=Math.sin(rot)*radius;camera.position.z=Math.cos(rot)*radius;camera.position.y=10+tilt*8;camera.lookAt(0,1,0);renderer.render(scene,camera)}animate();
+renderer.domElement.addEventListener('wheel',e=>{zoom=Math.max(17,Math.min(34,zoom+e.deltaY*.018))},{passive:true});
+function animate(){requestAnimationFrame(animate);camera.position.set(Math.sin(rotation)*zoom,10+tilt*10,Math.cos(rotation)*zoom);camera.lookAt(0,2,0);flag.rotation.y=Math.sin(performance.now()*.0018)*.12;renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body>
