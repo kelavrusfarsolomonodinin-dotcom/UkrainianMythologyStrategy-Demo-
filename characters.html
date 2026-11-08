@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#111915">
+<title>Просмотр 3D-персонажей — Предел легенд</title>
+<style>
+:root{color-scheme:dark;--gold:#d8b878;--cream:#f3e8d1;--panel:rgba(17,27,25,.92)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111915;color:var(--cream);font-family:system-ui,-apple-system,sans-serif;touch-action:pan-y}
+#view{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;touch-action:none}
+header{position:fixed;z-index:2;top:10px;left:10px;right:10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;pointer-events:none}
+.panel{pointer-events:auto;background:var(--panel);border:1px solid #b79b65a8;border-radius:13px;padding:9px 12px;box-shadow:0 6px 24px #0008;backdrop-filter:blur(8px)}
+h1{font-size:15px;margin:0 0 3px;color:#f1d49b}#status{font-size:11px;color:#d3c5aa}
+#back{color:var(--cream);text-decoration:none;font-size:12px;white-space:nowrap}
+#controls{position:fixed;z-index:2;left:10px;right:10px;bottom:10px;display:grid;gap:8px}
+#characters,#animations{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+button{border:1px solid #9e8658;background:#1b2b26;color:var(--cream);border-radius:10px;padding:10px 12px;font:600 12px system-ui;box-shadow:0 4px 14px #0007;touch-action:manipulation}
+button.active{background:#735b32;border-color:#f0d49b;color:#fff1cf}
+button:disabled{opacity:.45}
+#note{position:fixed;z-index:2;top:65px;left:50%;transform:translateX(-50%);max-width:90vw;text-align:center;background:#101915d9;border:1px solid #b79b654a;border-radius:9px;padding:7px 10px;font-size:11px;color:#e5d7bc}
+#loading{position:fixed;z-index:3;inset:0;display:grid;place-items:center;background:#111915e8;text-align:center;padding:24px;font-size:14px}
+@media(max-width:430px){button{padding:9px 9px;font-size:11px}#controls{bottom:7px;gap:6px}.panel{padding:8px 10px}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="view"></div>
+<header><div class="panel"><h1>Галерея 3D-персонажей</h1><div id="status">Подготовка сцены…</div></div><a class="panel" id="back" href="./">← К замку</a></header>
+<div id="note">Вращай сцену пальцем · своди/разводи пальцы для масштаба</div>
+<div id="controls"><div id="characters"></div><div id="animations"><button data-anim="idle" class="active">Ожидание</button><button data-anim="attack">Атака</button><button data-anim="dead">Падение</button></div></div>
+<div id="loading">Загружаю 3D-сцену…</div>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const host=document.querySelector('#view'),status=document.querySelector('#status'),loading=document.querySelector('#loading');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x17221e);scene.fog=new THREE.Fog(0x17221e,18,42);
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,100);camera.position.set(6,5,8);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;host.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe7f0e5,0x3d4438,2.1));
+const key=new THREE.DirectionalLight(0xffe0ae,3.2);key.position.set(-5,10,7);key.castShadow=true;key.shadow.mapSize.set(1024,1024);scene.add(key);
+const rim=new THREE.DirectionalLight(0x9ebcce,1.5);rim.position.set(5,5,-6);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(7,80),new THREE.MeshStandardMaterial({color:0x35463b,roughness:.95}));floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
+const platform=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.85,.22,64),new THREE.MeshStandardMaterial({color:0x756448,metalness:.35,roughness:.65}));platform.position.y=.02;platform.castShadow=true;platform.receiveShadow=true;scene.add(platform);
+const ring=new THREE.Mesh(new THREE.TorusGeometry(2.65,.035,8,96),new THREE.MeshStandardMaterial({color:0xd0ad69,metalness:.7,roughness:.35}));ring.rotation.x=Math.PI/2;ring.position.y=.15;scene.add(ring);
+const grid=new THREE.GridHelper(30,30,0x71816d,0x46564b);grid.position.y=-.09;scene.add(grid);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,1.7,0);controls.enableDamping=true;controls.dampingFactor=.07;controls.minDistance=3.5;controls.maxDistance=18;controls.maxPolarAngle=Math.PI*.48;controls.update();
+const names=['A01','A02','B01','B02','C01','C02','D01','D02'];
+const base='assets/models/gobkit-minions/minion-';
+const files=names.map(n=>base+n.toLowerCase()+'.glb');
+let currentRoot=null,mixer=null,segment='idle',segmentTime=0,lastFrame=performance.now(),currentIndex=-1,deadDone=false;
+const ranges={idle:{from:0,to:30},attack:{from:30,to:60},dead:{from:60,to:90}};
+const loader=new GLTFLoader();
+function setButtonsDisabled(v){document.querySelectorAll('[data-anim]').forEach(b=>b.disabled=v)}
+function chooseSegment(name){if(!mixer)return;segment=name;segmentTime=0;deadDone=false;const r=ranges[name];mixer.setTime(r.from/24);document.querySelectorAll('[data-anim]').forEach(b=>b.classList.toggle('active',b.dataset.anim===name));}
+document.querySelectorAll('[data-anim]').forEach(b=>b.addEventListener('click',()=>chooseSegment(b.dataset.anim)));
+async function showCharacter(i){
+ currentIndex=i;status.textContent='Загрузка персонажа '+names[i]+'…';setButtonsDisabled(true);
+ document.querySelectorAll('[data-char]').forEach(b=>b.classList.toggle('active',Number(b.dataset.char)===i));
+ if(currentRoot){scene.remove(currentRoot);currentRoot.traverse(o=>{if(o.geometry)o.geometry.dispose();});currentRoot=null;}
+ mixer=null;
+ try{
+  const gltf=await loader.loadAsync(files[i]);
+  const pivot=new THREE.Group();const model=gltf.scene;pivot.add(model);
+  const bounds=new THREE.Box3().setFromObject(model);const size=bounds.getSize(new THREE.Vector3());const center=bounds.getCenter(new THREE.Vector3());
+  const height=Math.max(size.y,.001);model.scale.setScalar(3.7/height);
+  model.position.set(-center.x*model.scale.x,-bounds.min.y*model.scale.y,-center.z*model.scale.z);
+  pivot.rotation.y=Math.PI;
+  pivot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.isSkinnedMesh)o.frustumCulled=false;}});
+  scene.add(pivot);currentRoot=pivot;
+  if(gltf.animations?.length){mixer=new THREE.AnimationMixer(model);mixer.clipAction(gltf.animations[0]).play();chooseSegment('idle');}
+  else{document.querySelector('[data-anim="attack"]').disabled=true;document.querySelector('[data-anim="dead"]').disabled=true;}
+  camera.position.set(6,4.8,7);controls.target.set(0,1.7,0);controls.update();
+  status.textContent='Персонаж '+names[i]+' · '+(gltf.animations?.length?'анимация загружена':'без анимации');
+  loading.style.display='none';setButtonsDisabled(!mixer);
+ }catch(e){status.textContent='Не удалось загрузить '+names[i]+': '+(e.message||e);loading.textContent='Ошибка загрузки модели '+names[i]+'. Проверь подключение и повтори выбор.';loading.style.display='grid';setButtonsDisabled(true);console.error(e);}
+}
+const chars=document.querySelector('#characters');
+names.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.dataset.char=i;b.addEventListener('click',()=>showCharacter(i));chars.appendChild(b);});
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-lastFrame)/1000,.08);lastFrame=now;if(mixer&&currentRoot){const r=ranges[segment];segmentTime+=dt;const duration=(r.to-r.from)/24;const local=segment==='dead'?Math.min(segmentTime,duration):segmentTime%duration;mixer.setTime(r.from/24+local);}controls.update();renderer.render(scene,camera);}
+requestAnimationFrame(frame);showCharacter(0);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>
