@@ -10,6 +10,8 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#182326;color:var(--cream);font-family:system-ui,-apple-system,sans-serif;touch-action:none}
 #game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 .hud{position:fixed;z-index:3;left:10px;right:10px;pointer-events:none;display:flex;gap:7px;align-items:center}
+#castleMenu,#outsideMenu{display:flex;gap:6px;pointer-events:auto}
+.hud button{pointer-events:auto}
 .top{top:10px;justify-content:space-between}.resources{display:flex;gap:5px;flex-wrap:wrap}
 .chip{background:var(--glass);border:1px solid var(--line);border-radius:11px;padding:8px 10px;font-size:11px;box-shadow:0 5px 18px #0005;backdrop-filter:blur(8px);white-space:nowrap}
 .chip b{color:#f5d69a;font-size:12px}.realm{font-weight:800;letter-spacing:.08em;color:#f4d59a}
@@ -78,7 +80,7 @@ function sphere(r,x,y,z,material,parent=scene){return mesh(new THREE.SphereGeome
 // Ландшафт, холмы и каменная площадка
 // Мировая карта: круглая суша на фоне океана.
 mesh(new THREE.PlaneGeometry(180,180),water,0,-.56,0).rotation.x=-Math.PI/2;
-const worldLand=mesh(new THREE.CircleGeometry(40,128),grass,0,-.49,0);worldLand.rotation.x=-Math.PI/2;
+const worldLand=mesh(new THREE.CircleGeometry(40,128),grass,0,-.49,0);worldLand.rotation.x=-Math.PI/2;worldLand.receiveShadow=true;
 const coast=mesh(new THREE.TorusGeometry(39.85,.28,8,160),lightStone,0,-.27,0);coast.rotation.x=Math.PI/2;
 const plateau=mesh(new THREE.CylinderGeometry(14.8,16.2,.9,48),moss,0,-.05,0);plateau.scale.z=.82;
 mesh(new THREE.CylinderGeometry(13.9,14.3,.18,48),lightStone,0,.39,0).scale.z=.82;
