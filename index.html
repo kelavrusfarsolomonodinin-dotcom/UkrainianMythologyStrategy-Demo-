@@ -26,6 +26,9 @@ button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weigh
 #close{position:absolute;right:12px;top:10px;padding:5px 10px;background:#182321}
 #toast{position:fixed;z-index:6;left:50%;bottom:84px;transform:translateX(-50%);padding:9px 13px;border-radius:10px;background:#17231feF;border:1px solid var(--line);font-size:12px;display:none;white-space:nowrap}
 @media(min-width:700px){.chip{font-size:13px;padding:10px 14px}.nav{font-size:13px;min-width:78px;padding:12px 18px}.nav span{font-size:21px}}
+.creatorToggle{pointer-events:auto;white-space:nowrap;background:linear-gradient(180deg,#765d31,#332817);border-color:#e5c27d;font-size:11px;padding:9px 10px}
+#creatorPanel{display:none;position:fixed;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,440px);max-height:86vh;overflow:auto;padding:20px;background:linear-gradient(145deg,#26372f,#10191a);border:1px solid var(--gold);border-radius:18px;box-shadow:0 18px 65px #000e}
+#creatorPanel h2{margin:0 35px 12px 0;color:#f1d29a}#creatorPanel h3{font-size:14px;color:#e7d1a6;margin:18px 0 8px}.creatorWarning{font-size:11px;line-height:1.4;color:#ffd28a;background:#4a321d;border:1px solid #98713e;border-radius:9px;padding:9px;margin-bottom:12px}.creatorStats{font-size:12px;line-height:1.8;color:#e6dcc8}.creatorGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.creatorGrid button{font-size:11px;padding:11px 7px}#creatorClose{position:absolute;right:12px;top:10px;padding:5px 10px}
 </style>
 </head>
 <body>
@@ -34,9 +37,10 @@ button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weigh
  <div class="chip"><div class="realm">ВОЛЯ ПРЕДКОВ</div><small>Цитадель · уровень <b id="level">1</b></small></div>
  <div class="resources">
   <div class="chip">⛰ <b id="basalt">1 250</b></div>
-  <div class="chip">🌲 <b>860</b></div>
-  <div class="chip">✧ <b>120</b></div>
+  <div class="chip">🌲 <b id="wood">860</b></div>
+  <div class="chip">✧ <b id="crystals">120</b></div>
  </div>
+ <button id="creatorToggle" class="creatorToggle">⚙ Создатель · тест</button>
 </div>
 <button id="travel">↗ Выйти за пределы замка</button>
 <div id="hint">Внутри замка · управление владением</div>
@@ -60,6 +64,7 @@ button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weigh
 </div>
 <div id="panel"><button id="close">✕</button><h2 id="panelTitle">Здание</h2><div class="sub" id="panelLevel">Уровень 1 · Цитадель</div><p id="panelText"></p><div id="panelExtras"></div><div class="row"><button id="upgrade">Улучшить · 250 ⛰</button><button id="panelAction">Подробнее</button></div></div>
 <div id="toast"></div>
+<div id="creatorPanel"><button id="creatorClose">✕</button><h2>Панель создателя</h2><div class="creatorWarning">ТЕСТОВЫЙ РЕЖИМ · изменения пока хранятся только в этой открытой вкладке. Это не защищённая авторизация аккаунта.</div><div class="creatorStats" id="creatorStats"></div><h3>Выдать ресурсы</h3><div class="creatorGrid"><button data-give="basalt">+ 5 000 ⛰ Базальт</button><button data-give="wood">+ 5 000 🌲 Древесина</button><button data-give="crystals">+ 1 000 ✧ Кристаллы</button><button data-give="crowns">+ 100 👑 Короны</button></div><h3>Быстрое тестирование</h3><div class="creatorGrid"><button id="creatorLevel">Уровень замка +1</button><button id="creatorTroops">Каждого войска +100</button><button id="creatorReset">Сбросить тестовые данные</button></div></div>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 const host=document.querySelector('#game');
@@ -115,6 +120,9 @@ for(let i=0;i<8;i++){const a=i*Math.PI/4;const x=Math.sin(a)*2.5,z=-.4+Math.cos(
 cylinder(.055,.055,3.4,-.4,8.1,-.4,bronze,castle,8);
 const flag=mesh(new THREE.PlaneGeometry(1.65,1.05),new THREE.MeshStandardMaterial({color:0x1e5360,side:THREE.DoubleSide,roughness:.8}),.43,8.65,-.4,castle);
 const emblem=mesh(new THREE.TorusGeometry(.27,.07,8,16),bronze,.43,8.65,-.37,castle);emblem.scale.y=1.25;
+// Фасадные рельефы, узкие окна-бойницы и декоративные пояса башен.
+for(const x of [-5.2,5.2])for(const z of [-5.2,5.2]){for(let y=1.15;y<3.3;y+=.72){const slit=box(.12,.42,.09,x,y,z+(z>0?.86:-.86),darkStone,castle);slit.material=darkStone;}cylinder(.96,.96,.12,x,2.72,z,bronze,castle,16);}
+for(let i=0;i<12;i++){const a=i*Math.PI/6;const x=Math.sin(a)*2.7,z=-.4+Math.cos(a)*2.7;const relief=mesh(new THREE.TorusGeometry(.13,.035,6,12),bronze,x,3.25,z,castle);relief.scale.set(1,1.35,.5)}
 // Декоративные ярусы цитадели и парадная лестница
 cylinder(2.95,3.05,.42,0,.55,-.4,darkStone,castle,16);
 cylinder(2.72,2.72,.22,0,4.15,-.4,bronze,castle,16);
@@ -124,6 +132,15 @@ mesh(new THREE.ConeGeometry(1.9,1.45,12),roofGreen,0,6.42,-.4,castle);
 for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.sin(a)*2.62,z=-.4+Math.cos(a)*2.62;cylinder(.16,.23,3.25,x,2.1,z,lightStone,castle,8);cylinder(.24,.24,.16,x,3.76,z,bronze,castle,8);const win=mesh(new THREE.SphereGeometry(.24,12,10),mat(0xf5d18a,.25),x,2.55,z,castle);win.scale.set(.65,1.45,.45)}
 for(let i=0;i<4;i++){const a=Math.PI/4+i*Math.PI/2,x=Math.sin(a)*1.42,z=-.4+Math.cos(a)*1.42;cylinder(.42,.5,1.65,x,5.55,z,stone,castle,10);mesh(new THREE.ConeGeometry(.56,.85,10),roof,x,6.78,z,castle)}
 for(let i=0;i<5;i++)box(2.8-i*.35,.18,.42,0,.2+i*.18,6.1+i*.35,lightStone,castle);
+// Детализация крепостных стен: каменная кладка, бойницы, контрфорсы и парапеты.
+for(let side=-1;side<=1;side+=2){
+ for(let i=0;i<9;i++){const x=-4.45+i*1.11;const z=side*5.62;const seam=box(.025,.72,.035,x,1.02,z,darkStone,castle);seam.material=darkStone;}
+ for(let i=0;i<7;i++){const z=-4.2+i*1.4;box(.035,.68,.035,side*5.62,1.02,z,darkStone,castle);}
+ for(let i=0;i<10;i++){const x=-4.5+i*1;box(.38,.48,.42,x,2.02,side*5.2,lightStone,castle);}
+ for(let i=0;i<8;i++){const z=-4.3+i*1.23;box(.42,.48,.38,side*5.2,2.02,z,lightStone,castle);}
+}
+// Угловые декоративные пилоны и факельные ниши.
+for(const x of [-4.15,4.15])for(const z of [-4.15,4.15]){cylinder(.19,.25,2.35,x,1.65,z,lightStone,castle,10);cylinder(.28,.28,.16,x,2.86,z,bronze,castle,10);sphere(.12,x,3.12,z,mat(0xf0b85d,.25),castle)}
 // внутренний двор
 const yard=mesh(new THREE.CircleGeometry(3.7,32),mat(0x8d876d),0,.49,-.35,castle);yard.rotation.x=-Math.PI/2;
 for(let i=0;i<4;i++){const a=i*Math.PI/2;const col=cylinder(.12,.16,2.2,Math.cos(a)*3.25,1.6,-.35+Math.sin(a)*3.25,bronze,castle,10);}
@@ -153,10 +170,11 @@ building('Казармы',-8,1,'round');building('Кузница',8,1,'forge');b
 building('Святилище',0,-10,'round');
 // маленькие сторожевые костры и каменные фонари
 for(const p of [[-3,8],[3,8],[-10,-4],[10,-4]]){cylinder(.22,.28,.65,p[0],.75,p[1],darkStone);const flame=sphere(.18,p[0],1.25,p[1],mat(0xf0a94d,.25));flame.scale.y=1.7}
-let level=1,basalt=1250,active=null;
-const troops={Пехота:0,Лучники:0,Стража:0};
+let level=1,basalt=1250,wood=860,crystals=120,crowns=0,active=null;
+const initialTroops={Пехота:0,Лучники:0,Стража:0};
+const troops={...initialTroops};
 const troopCosts={Пехота:100,Лучники:140,Стража:220};
-function refreshResources(){document.querySelector('#basalt').textContent=basalt.toLocaleString('ru-RU')}
+function refreshResources(){document.querySelector('#basalt').textContent=basalt.toLocaleString('ru-RU');document.querySelector('#wood').textContent=wood.toLocaleString('ru-RU');document.querySelector('#crystals').textContent=crystals.toLocaleString('ru-RU')}
 function renderTroops(){const e=document.querySelector('#panelExtras');e.innerHTML='<div class="sub">СОСТАВ ВОЙСК</div>'+Object.keys(troops).map(n=>'<div class="row"><span style="flex:1;font-size:13px">'+n+': <b>'+troops[n]+'</b></span><button data-recruit="'+n+'" style="flex:1">Нанять · '+troopCosts[n]+' ⛰</button></div>').join('')+'<p class="sub">Набор учебный: стоимость списывается из базальта, численность сохраняется в этой демонстрации.</p>';e.querySelectorAll('[data-recruit]').forEach(b=>b.onclick=()=>{const n=b.dataset.recruit,cost=troopCosts[n];if(basalt<cost){toast('Недостаточно базальта');return}basalt-=cost;troops[n]++;refreshResources();renderTroops();toast(n+' наняты · всего '+troops[n])})}
 const descriptions={
 'Казармы':'Здесь готовятся отряды защитников. Улучшение открывает новые уровни подготовки и увеличивает вместимость войск.',
@@ -178,6 +196,15 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openPanel(b.da
 document.querySelector('#upgrade').onclick=()=>{if(basalt<250){toast('Недостаточно базальта');return}basalt-=250;level++;document.querySelector('#level').textContent=level;document.querySelector('#basalt').textContent=basalt.toLocaleString('ru-RU');document.querySelector('#panelLevel').textContent='Демонстрационный раздел · уровень '+level;castle.scale.setScalar(1+Math.min(level-1,6)*.025);toast('Уровень улучшен · это локальная демонстрация')};
 document.querySelector('#panelAction').onclick=()=>toast('Этот раздел будет развиваться в следующих версиях');
 function toast(s){const t=document.querySelector('#toast');t.textContent=s;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2100)}
+// Локальная панель тестирования создателя: не является серверной системой прав.
+const creatorPanel=document.querySelector("#creatorPanel");
+function updateCreatorStats(){document.querySelector("#creatorStats").innerHTML=`Замок: уровень <b>${level}</b><br>Базальт: <b>${basalt.toLocaleString("ru-RU")}</b> · Древесина: <b>${wood.toLocaleString("ru-RU")}</b><br>Кристаллы: <b>${crystals.toLocaleString("ru-RU")}</b> · Короны: <b>${crowns.toLocaleString("ru-RU")}</b><br>Войска: ${Object.entries(troops).map(([n,v])=>n+" "+v).join(" · ")}`}
+document.querySelector("#creatorToggle").onclick=()=>{updateCreatorStats();creatorPanel.style.display="block"};
+document.querySelector("#creatorClose").onclick=()=>creatorPanel.style.display="none";
+document.querySelectorAll("[data-give]").forEach(b=>b.onclick=()=>{const k=b.dataset.give;if(k==="basalt")basalt+=5000;if(k==="wood")wood+=5000;if(k==="crystals")crystals+=1000;if(k==="crowns")crowns+=100;refreshResources();updateCreatorStats();toast("Ресурсы добавлены для теста")});
+document.querySelector("#creatorLevel").onclick=()=>{level++;document.querySelector("#level").textContent=level;castle.scale.setScalar(1+Math.min(level-1,12)*.035);updateCreatorStats();toast("Уровень замка повышен")};
+document.querySelector("#creatorTroops").onclick=()=>{Object.keys(troops).forEach(n=>troops[n]+=100);updateCreatorStats();toast("Добавлено по 100 каждого вида войск")};
+document.querySelector("#creatorReset").onclick=()=>{level=1;basalt=1250;wood=860;crystals=120;crowns=0;Object.assign(troops,initialTroops);document.querySelector("#level").textContent=level;castle.scale.setScalar(1);refreshResources();updateCreatorStats();toast("Тестовые данные сброшены")};
 // Отдельное внешнее пространство за пределами замка
 const outer=new THREE.Group();scene.add(outer);
 // Координатная сетка 20 x 20 с шагом 4, обрезанная по круглой границе.
