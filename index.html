@@ -66,7 +66,22 @@ button:active{transform:scale(.96)}.nav{min-width:64px;font-size:11px;font-weigh
 <div id="toast"></div>
 <div id="creatorPanel"><button id="creatorClose">✕</button><h2>Панель создателя</h2><div class="creatorWarning">ТЕСТОВЫЙ РЕЖИМ · изменения пока хранятся только в этой открытой вкладке. Это не защищённая авторизация аккаунта.</div><div class="creatorStats" id="creatorStats"></div><h3>Выдать ресурсы</h3><div class="creatorGrid"><button data-give="basalt">+ 5 000 ⛰ Базальт</button><button data-give="wood">+ 5 000 🌲 Древесина</button><button data-give="crystals">+ 1 000 ✧ Кристаллы</button><button data-give="crowns">+ 100 👑 Короны</button></div><h3>Быстрое тестирование</h3><div class="creatorGrid"><button id="creatorLevel">Уровень замка +1</button><button id="creatorTroops">Каждого войска +100</button><button id="creatorReset">Сбросить тестовые данные</button></div></div>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+// Загружаем Three.js с резервных источников: отказ одного CDN не должен останавливать игру.
+let THREE=null;
+const threeSources=[
+ 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js',
+ 'https://unpkg.com/three@0.160.0/build/three.module.js',
+ 'https://esm.sh/three@0.160.0'
+];
+for(const source of threeSources){
+ try{THREE=await import(source);break}
+ catch(error){console.warn('Не удалось загрузить Three.js:',source,error)}
+}
+if(!THREE){
+ const host=document.querySelector('#game');
+ host.innerHTML='<div style="position:fixed;inset:15% 8%;display:grid;place-content:center;text-align:center;padding:24px;background:#172522;color:#f2e5c9;border:1px solid #d7b477;border-radius:18px;font:16px system-ui;line-height:1.5"><b style="font-size:22px;color:#f1d29a">3D-модуль не загрузился</b><p>Браузер не получил библиотеку Three.js с доступных серверов. Проверь подключение к интернету и открой демо позже.</p><small>Интерфейс не будет запускать игровые действия, пока 3D-модуль не загрузится.</small></div>';
+ throw new Error('Three.js недоступен на всех резервных источниках');
+}
 const host=document.querySelector('#game');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x9ba9a1);scene.fog=new THREE.FogExp2(0x9ba9a1,.018);
 const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,150);
